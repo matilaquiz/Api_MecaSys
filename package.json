@@ -1,0 +1,18 @@
+{
+    "scripts": {
+    "dev": "nodemon apiMecaSys.js",
+    "start": "node apiMecaSys.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "mysql2": "^3.11.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
