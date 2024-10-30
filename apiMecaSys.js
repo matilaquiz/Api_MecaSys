@@ -50,6 +50,46 @@ app.use(cors())
     });
 })*/
 
+/*app.post("/cargarTurno",(req,res)=>{
+    const turno=req.body
+    const sql="INSERT INTO turno "
+})*/
+
+app.post("/cargarTurno",(req,res)=>{
+    const turno=req.body
+    const sql='INSERT INTO turno(fecha,hora,cliente,mecanico,estadoTruno) VALUES (?,?,?,?,?) '
+    db.query(sql,[turno.fecha,turno.hora,turno.cliente,turno.mecanico,1],(error,respuesta)=>{
+        if(error){
+            res.status(400).send(error)
+        }
+
+        const turnoId=respuesta.insertId
+        console.log("Turno insertado con ID:", respuesta.insertId);
+
+        turno.servicio.forEach(servicio => {
+            const sqlServicio='INSERT INTO detalleturno(descripcion,turno,servicio,repuesto) VALUES(?,?,?,?)'
+            db.query(sqlServicio,["servicio",turnoId,servicio,null],(error)=>{
+                if (error) {
+                    console.error("Error al insertar el servicio en detalleturno:", error);
+                }
+            })
+            
+        });
+       
+        turno.repuesto.forEach(repuesto => {
+            const sqlRepuesto = 'INSERT INTO detalleturno(descripcion, turno, servicio, repuesto) VALUES(?, ?, ?, ?)';
+            db.query(sqlRepuesto, ["repuesto", turnoId, null, repuesto], (error) => {
+                if (error) {
+                    console.error("Error al insertar el repuesto en detalleturno:", error);
+                }
+            });
+        });
+
+        res.status(200).send("Turno y detalles insertados con éxito");
+    })
+
+})
+
 
 app.get("/traerTurnos", (req, res) => {
     const sql = "SELECT * FROM turno";
@@ -153,26 +193,49 @@ app.get("/traerMecanicos", (req, res) => {
 
 })
 
-app.get("/traerRepuestos"), (req, res) => {
+app.get("/traerRepuestos", (req, res) => {
     const sql = 'SELECT * FROM repuesto'
     db.query(sql, (error, respuesta) => {
         if (error) {
             return res.status(400).send(error)
         }
-        return res.status(400).send(respuesta)
+        return res.status(200).send(respuesta)
     })
-}
+
+})
 
 
-app.get("/traerServicios"), (req, res) => {
+app.get("/traerServicios", (req, res) => {
     const sql = 'SELECT * FROM servicio'
     db.query(sql, (error, respuesta) => {
         if (error) {
             return res.status(400).send(error)
         }
-        return res.status(400).send(respuesta)
+        return res.status(200).send(respuesta)
     })
-}
+})
+
+app.get("/traerEstado",(req,res)=>{
+    const sql="SELECT * FROM estadoturno"
+    db.query(sql,(error,resp)=>{
+        if(error){
+            return res.status(400).send(error)
+        }
+        return res.status(200).send(resp)
+    })
+})
+
+app.put("/modificarEstado/:id" ,(req,res)=>{
+    const {id}=req.params
+    const estadoTruno=req.body
+    const sql=`UPDATE turno SET ? WHERE idturno=?`
+    db.query(sql,[estadoTruno,id],(error,resp)=>{
+        if(error){
+            res.status(400).send(error)
+        }
+        res.status(200).send(resp)
+    })
+})
 
 app.listen(port, () => {
     console.log("server ok")
