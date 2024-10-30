@@ -50,32 +50,30 @@ app.use(cors())
     });
 })*/
 
-/*app.post("/cargarTurno",(req,res)=>{
-    const turno=req.body
-    const sql="INSERT INTO turno "
-})*/
+/*const fechaParts = turno.fecha.split("-");
+    const fecha = `${fechaParts[2]}-${fechaParts[1]}-${fechaParts[0]}`*/
 
-app.post("/cargarTurno",(req,res)=>{
-    const turno=req.body
-    const sql='INSERT INTO turno(fecha,hora,cliente,mecanico,estadoTruno) VALUES (?,?,?,?,?) '
-    db.query(sql,[turno.fecha,turno.hora,turno.cliente,turno.mecanico,1],(error,respuesta)=>{
-        if(error){
+app.post("/cargarTurno", (req, res) => {
+    const turno = req.body
+    const sql = 'INSERT INTO turno(fecha,hora,cliente,mecanico,estadoTruno,vehiculo) VALUES (?,?,?,?,?,?) '
+    db.query(sql, [turno.fecha, turno.hora, turno.cliente, turno.mecanico, 1, turno.vehiculo], (error, respuesta) => {
+        if (error) {
             res.status(400).send(error)
         }
 
-        const turnoId=respuesta.insertId
+        const turnoId = respuesta.insertId
         console.log("Turno insertado con ID:", respuesta.insertId);
 
         turno.servicio.forEach(servicio => {
-            const sqlServicio='INSERT INTO detalleturno(descripcion,turno,servicio,repuesto) VALUES(?,?,?,?)'
-            db.query(sqlServicio,["servicio",turnoId,servicio,null],(error)=>{
+            const sqlServicio = 'INSERT INTO detalleturno(descripcion,turno,servicio,repuesto) VALUES(?,?,?,?)'
+            db.query(sqlServicio, ["servicio", turnoId, servicio, null], (error) => {
                 if (error) {
                     console.error("Error al insertar el servicio en detalleturno:", error);
                 }
             })
-            
+
         });
-       
+
         turno.repuesto.forEach(repuesto => {
             const sqlRepuesto = 'INSERT INTO detalleturno(descripcion, turno, servicio, repuesto) VALUES(?, ?, ?, ?)';
             db.query(sqlRepuesto, ["repuesto", turnoId, null, repuesto], (error) => {
@@ -105,8 +103,8 @@ app.get("/traerTurnos", (req, res) => {
 
         results.forEach(turno => {
             const sql2 = "SELECT s.nombreServicio as servicio , r.descripcion as nombreRepuesto,r.marca as marcaRepuesto FROM detalleturno AS dt LEFT JOIN servicio s ON s.idServicio=dt.servicio LEFT JOIN repuesto r ON r.idRepuesto=dt.repuesto WHERE dt.turno = " + turno.idturno;
-               
-                db.query(sql2, (error, response2) => {
+
+            db.query(sql2, (error, response2) => {
                 if (error) {
                     return res.status(500).send(error);
                 }
@@ -122,7 +120,7 @@ app.get("/traerTurnos", (req, res) => {
                     detalle: response2
 
                 };
-                
+
                 finalResults.push(turnoFormateado)
 
 
@@ -143,6 +141,42 @@ app.get("/traerTurnos", (req, res) => {
     });
 });
 
+
+app.get("/traerUnicoTurno/:id", (req, res) => {
+    const { id } = req.params
+    const sql = `SELECT * FROM turno WHERE idturno=${id}`;
+
+    db.query(sql, (error, results) => {
+        console.log(results)
+        if (error) {
+            return res.status(400).send(error);
+        }
+       
+        const sql2 = "SELECT s.nombreServicio as servicio , r.descripcion as nombreRepuesto,r.marca as marcaRepuesto FROM detalleturno AS dt LEFT JOIN servicio s ON s.idServicio=dt.servicio LEFT JOIN repuesto r ON r.idRepuesto=dt.repuesto WHERE dt.turno = " + id;
+
+        db.query(sql2, (error, response2) => {
+            if (error) {
+                return res.status(500).send(error);
+            }
+
+
+            const turnoFormateado = {
+                ...results[0],
+                fecha: results[0].fecha.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }),
+                detalle: response2
+
+            };
+             //finalResults.push(turnoFormateado) 
+             return res.status(200).send(turnoFormateado);
+        })
+      
+    })
+
+})
 
 app.delete("/eliminarTurno/:id", (req, res) => {
     const { id } = req.params;
@@ -215,22 +249,22 @@ app.get("/traerServicios", (req, res) => {
     })
 })
 
-app.get("/traerEstado",(req,res)=>{
-    const sql="SELECT * FROM estadoturno"
-    db.query(sql,(error,resp)=>{
-        if(error){
+app.get("/traerEstado", (req, res) => {
+    const sql = "SELECT * FROM estadoturno"
+    db.query(sql, (error, resp) => {
+        if (error) {
             return res.status(400).send(error)
         }
         return res.status(200).send(resp)
     })
 })
 
-app.put("/modificarEstado/:id" ,(req,res)=>{
-    const {id}=req.params
-    const estadoTruno=req.body
-    const sql=`UPDATE turno SET ? WHERE idturno=?`
-    db.query(sql,[estadoTruno,id],(error,resp)=>{
-        if(error){
+app.put("/modificarEstado/:id", (req, res) => {
+    const { id } = req.params
+    const estadoTruno = req.body
+    const sql = `UPDATE turno SET ? WHERE idturno=?`
+    db.query(sql, [estadoTruno, id], (error, resp) => {
+        if (error) {
             res.status(400).send(error)
         }
         res.status(200).send(resp)
