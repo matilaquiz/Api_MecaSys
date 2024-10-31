@@ -63,6 +63,7 @@ app.post("/cargarTurno", (req, res) => {
 
         const turnoId = respuesta.insertId
         console.log("Turno insertado con ID:", respuesta.insertId);
+        
 
         turno.servicio.forEach(servicio => {
             const sqlServicio = 'INSERT INTO detalleturno(descripcion,turno,servicio,repuesto) VALUES(?,?,?,?)'
@@ -178,6 +179,8 @@ app.get("/traerUnicoTurno/:id", (req, res) => {
 
 })
 
+
+
 app.delete("/eliminarTurno/:id", (req, res) => {
     const { id } = req.params;
     const query = 'DELETE FROM turno WHERE idturno = ?';
@@ -192,6 +195,48 @@ app.delete("/eliminarTurno/:id", (req, res) => {
     });
 
 })
+
+
+app.put('/modificarTurno/:id', (req, res) => {
+    const { id }=req.params;
+    const turno = req.body;
+    console.log(req.body)
+    const sql = `UPDATE turno SET fecha=? , hora=? , mecanico=? , vehiculo=? WHERE idturno= ${id} `
+    db.query(sql, [turno.fecha,turno.hora,turno.mecanico,turno.vehiculo], (err, results) => {
+      if (err) throw err;
+      
+     
+        const sqlServicio="DELETE FROM detalleturno WHERE turno = ? "
+        db.query(sqlServicio,[id],(error)=>{
+            if(error){
+                return res.status(400).send("no se pudo eliminar el detalle")
+            }
+
+        })
+      
+      turno.servicio.forEach(servicio => {
+        const sqlServicio = 'INSERT INTO detalleturno(descripcion,turno,servicio,repuesto) VALUES(?,?,?,?)'
+        db.query(sqlServicio, ["servicio", id , servicio, null], (error) => {
+            if (error) {
+                console.error("Error al insertar el servicio en detalleturno:", error);
+            }
+        })
+
+    });
+
+    turno.repuesto.forEach(repuesto => {
+        const sqlRepuesto = 'INSERT INTO detalleturno(descripcion, turno, servicio, repuesto) VALUES(?, ?, ?, ?)';
+        db.query(sqlRepuesto, ["repuesto",id, null, repuesto], (error) => {
+            if (error) {
+                console.error("Error al insertar el repuesto en detalleturno:", error);
+            }
+        });
+    });
+
+    res.status(200).send("Turno y detalles insertados con éxito");
+  
+    })
+  })
 
 
 app.get("/traerClientes", (req, res) => {
@@ -261,13 +306,13 @@ app.get("/traerEstado", (req, res) => {
 
 app.put("/modificarEstado/:id", (req, res) => {
     const { id } = req.params
-    const estadoTruno = req.body
-    const sql = `UPDATE turno SET ? WHERE idturno=?`
-    db.query(sql, [estadoTruno, id], (error, resp) => {
+    const {estado} = req.body
+    const sql = `UPDATE turno SET estadoTruno=? WHERE idturno=?`
+    db.query(sql, [estado, id], (error, resp) => {
         if (error) {
             res.status(400).send(error)
         }
-        res.status(200).send(resp)
+        return res.status(200).send(resp)
     })
 })
 
